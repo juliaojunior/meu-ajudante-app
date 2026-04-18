@@ -4,9 +4,12 @@ import { useState } from "react";
 import { Camera, Volume2, ArrowLeft, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useMedicationStore } from "@/store/useMedicationStore";
 
 export default function AddMedication() {
   const router = useRouter();
+  const addMedication = useMedicationStore((state) => state.addMedication);
+  
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     nome: "",
@@ -36,19 +39,31 @@ export default function AddMedication() {
         if (data.sucesso && data.medicamento) {
           setFormData((prev) => ({
             ...prev,
-            nome: data.medicamento.nome_principal || "",
-            generico: data.medicamento.nome_generico || "",
+            nome: data.medicamento.nome_principal || prev.nome,
+            generico: data.medicamento.nome_generico || prev.generico,
           }));
+          alert("Bula reconhecida! O nome foi preenchido.");
         } else {
-          alert(data.mensagem_erro || "Erro ao ler. Preencha manualmente.");
+          alert(data.mensagem_erro || "Erro visual. Escreva manualmente abaixo.");
         }
         setLoading(false);
       };
       reader.readAsDataURL(file);
     } catch {
-      alert("Erro ao processar a imagem.");
+      alert("Aconteceu um erro. Tente novamente.");
       setLoading(false);
     }
+  };
+
+  const handleSave = () => {
+    if (!formData.nome.trim()) {
+      alert("ATENÇÃO: Você precisa digitar o Nome do Remédio antes de salvar!");
+      return;
+    }
+    
+    // Dispara a mutação na store!
+    addMedication(formData);
+    router.push("/");
   };
 
   return (
@@ -61,11 +76,11 @@ export default function AddMedication() {
         >
           <ArrowLeft size={32} />
         </Link>
-        <h1 className="text-2xl font-bold text-gray-900">Novo Remédio</h1>
+        <h1 className="text-2xl font-extrabold text-gray-900">Novo Remédio</h1>
       </header>
 
-      <main className="flex-1 p-5 flex flex-col space-y-8 overflow-y-auto">
-        {/* Extrator IA */}
+      <main className="flex-1 p-5 flex flex-col space-y-8 overflow-y-auto pb-32">
+        {/* Inteligência Artificial Oculta no Botão Grande */}
         <div className="w-full">
           <input 
             type="file" 
@@ -77,52 +92,54 @@ export default function AddMedication() {
           />
           <label 
             htmlFor="cameraInput"
-            className={`min-h-[80px] w-full flex items-center justify-center space-x-3 rounded-2xl shadow-md transition-transform active:scale-95 text-xl font-bold ${
-              loading ? "bg-gray-300 text-gray-600 pointer-events-none" : "bg-brand-600 text-white hover:bg-brand-500"
+            className={`min-h-[88px] w-full flex items-center justify-center space-x-4 rounded-2xl shadow-md transition-transform active:scale-95 text-2xl font-bold cursor-pointer border-4 ${
+              loading 
+                ? "bg-gray-200 text-gray-600 border-gray-300 pointer-events-none" 
+                : "bg-brand-600 text-white border-brand-700 hover:bg-brand-500"
             }`}
           >
-            {loading ? <Loader2 size={32} className="animate-spin" /> : <Camera size={32} />}
-            <span>{loading ? "Lendo a embalagem..." : "Tirar Foto da Caixa"}</span>
+            {loading ? <Loader2 size={36} className="animate-spin" /> : <Camera size={36} />}
+            <span>{loading ? "Lendo embalagem..." : "Tirar Foto da Caixa"}</span>
           </label>
         </div>
 
-        {/* Formulário */}
-        <div className="space-y-5">
-          <div className="flex flex-col space-y-2">
-            <label className="text-xl font-bold text-gray-800">Nome do Remédio</label>
+        {/* Inputs de Preenchimento Manual ou Recebido da IA */}
+        <div className="space-y-6">
+          <div className="flex flex-col space-y-3">
+            <label className="text-2xl font-bold text-gray-800">Nome da Caixa</label>
             <input 
               type="text" 
-              className="min-h-[64px] border-2 border-gray-300 rounded-xl px-4 text-xl font-semibold focus:border-brand-500 focus:ring-4 focus:ring-brand-500/20 outline-none"
+              className="min-h-[72px] border-4 border-gray-300 rounded-2xl px-5 text-2xl font-extrabold text-gray-900 focus:border-brand-500 focus:ring-4 focus:ring-brand-500/20 outline-none transition-all"
               placeholder="Ex: Losartana"
               value={formData.nome}
               onChange={(e) => setFormData({...formData, nome: e.target.value})}
             />
           </div>
 
-          <div className="flex flex-col space-y-2">
-            <label className="text-xl font-bold text-gray-800">Nome Genérico (Opcional)</label>
+          <div className="flex flex-col space-y-3">
+            <label className="text-2xl font-bold text-gray-800">Genérico (Opcional)</label>
             <input 
               type="text" 
-              className="min-h-[64px] border-2 border-gray-300 rounded-xl px-4 text-xl bg-white focus:border-brand-500 focus:ring-4 focus:ring-brand-500/20 outline-none"
+              className="min-h-[72px] border-4 border-gray-300 rounded-2xl px-5 text-2xl font-bold text-gray-700 bg-white focus:border-brand-500 outline-none transition-all"
               value={formData.generico}
               onChange={(e) => setFormData({...formData, generico: e.target.value})}
             />
           </div>
 
           <div className="grid grid-cols-2 gap-4">
-            <div className="flex flex-col space-y-2">
-              <label className="text-xl font-bold text-gray-800">Horário</label>
+            <div className="flex flex-col space-y-3">
+              <label className="text-2xl font-bold text-gray-800">Que Horas?</label>
               <input 
                 type="time" 
-                className="min-h-[64px] border-2 border-gray-300 rounded-xl px-4 text-xl font-bold bg-white focus:border-brand-500 outline-none"
+                className="min-h-[72px] border-4 border-gray-300 rounded-2xl px-5 text-2xl font-extrabold text-brand-600 bg-blue-50 focus:border-brand-500 outline-none w-full"
                 value={formData.horario}
                 onChange={(e) => setFormData({...formData, horario: e.target.value})}
               />
             </div>
-            <div className="flex flex-col space-y-2">
-              <label className="text-xl font-bold text-gray-800">Frequência</label>
+            <div className="flex flex-col space-y-3">
+              <label className="text-2xl font-bold text-gray-800">Frequência</label>
               <select 
-                className="min-h-[64px] border-2 border-gray-300 rounded-xl px-4 text-xl font-bold bg-white focus:border-brand-500 outline-none"
+                className="min-h-[72px] border-4 border-gray-300 rounded-2xl pl-4 pr-1 text-2xl font-bold text-gray-900 bg-white focus:border-brand-500 outline-none"
                 value={formData.periodicidade}
                 onChange={(e) => setFormData({...formData, periodicidade: e.target.value})}
               >
@@ -132,38 +149,31 @@ export default function AddMedication() {
             </div>
           </div>
           
-          <div className="flex items-center justify-between p-5 bg-white border-2 border-gray-200 rounded-2xl mt-4">
+          <div className="flex items-center justify-between p-6 bg-white border-4 border-gray-200 rounded-3xl mt-6 cursor-pointer" onClick={() => setFormData({...formData, alarmeVisivel: !formData.alarmeVisivel})}>
             <div className="flex items-center space-x-4">
-              <div className="p-3 bg-blue-100 text-brand-600 rounded-xl">
-                <Volume2 size={32} />
+              <div className="p-4 bg-blue-100 text-brand-600 rounded-2xl">
+                <Volume2 size={36} />
               </div>
-              <span className="text-xl font-bold text-gray-800">Alarme Sonoro</span>
+              <span className="text-2xl font-bold text-gray-800">Tocar Alarme</span>
             </div>
             
-            {/* Toggle Switch Gigante */}
-            <label className="relative inline-flex items-center cursor-pointer min-h-[48px] min-w-[80px]">
-              <input 
-                type="checkbox" 
-                className="sr-only peer" 
-                checked={formData.alarmeVisivel}
-                onChange={() => setFormData({...formData, alarmeVisivel: !formData.alarmeVisivel})}
-              />
-              <div className="w-20 h-10 bg-gray-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:bg-green-500 after:content-[''] after:absolute after:top-[4px] after:left-[4px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-8 after:w-9 after:transition-all"></div>
-            </label>
+            <div className={`relative inline-flex items-center min-h-[56px] min-w-[96px] rounded-full transition-colors border-4 ${formData.alarmeVisivel ? 'bg-green-500 border-green-600' : 'bg-gray-300 border-gray-400'}`}>
+              <div className={`w-10 h-10 bg-white rounded-full shadow-md transform transition-transform duration-300 ${formData.alarmeVisivel ? 'translate-x-11' : 'translate-x-1'}`}></div>
+            </div>
           </div>
         </div>
       </main>
 
-      <footer className="p-5 bg-white border-t border-gray-200 flex space-x-4 pb-8">
+      <footer className="fixed bottom-0 left-0 right-0 p-5 bg-white border-t-2 border-gray-200 flex space-x-4 max-w-md mx-auto shadow-[0_-10px_20px_-5px_rgba(0,0,0,0.05)] z-40">
         <Link 
           href="/" 
-          className="flex-1 min-h-[72px] flex items-center justify-center text-xl font-bold text-gray-600 bg-gray-200 hover:bg-gray-300 rounded-2xl transition-colors"
+          className="flex-1 min-h-[80px] flex items-center justify-center text-2xl font-bold text-gray-600 bg-gray-200 hover:bg-gray-300 rounded-2xl active:scale-95 transition-transform"
         >
-          Cancelar
+          Voltar
         </Link>
         <button 
-          onClick={() => { alert('Salvo com sucesso!'); router.push('/'); }}
-          className="flex-[2] flex items-center justify-center min-h-[72px] text-xl font-bold text-white bg-green-600 hover:bg-green-700 active:scale-95 transition-transform shadow-lg rounded-2xl"
+          onClick={handleSave}
+          className="flex-[2] flex items-center justify-center min-h-[80px] text-2xl font-extrabold text-white bg-green-600 hover:bg-green-700 active:scale-95 transition-transform shadow-xl shadow-green-600/30 rounded-2xl border-b-4 border-green-800"
         >
           Salvar
         </button>

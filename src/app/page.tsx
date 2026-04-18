@@ -2,23 +2,28 @@
 
 import { Plus, Pill, CheckCircle2 } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
-
-// Mock temporário simulando Zustand (será conectado posteriormente)
-const initialMedications = [
-  { id: 1, name: "Losartana", time: "08:00", taken: false },
-  { id: 2, name: "Vitamina D", time: "12:00", taken: false },
-  { id: 3, name: "Sinvastatina", time: "20:00", taken: false },
-];
+import { useMedicationStore } from "@/store/useMedicationStore";
+import { useEffect, useState } from "react";
 
 export default function Home() {
-  const [meds, setMeds] = useState(initialMedications);
+  const { medications, toggleTaken } = useMedicationStore();
+  const [mounted, setMounted] = useState(false);
 
-  const toggleStatus = (id: number) => {
-    setMeds((prev) =>
-      prev.map((m) => (m.id === id ? { ...m, taken: !m.taken } : m))
+  // Evita o erro de "Hidratação" pois o LocalStorage demora milissegundos para injetar na tela
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <p className="text-2xl font-bold text-gray-500 animate-pulse">Carregando...</p>
+      </div>
     );
-  };
+  }
+
+  // Ordena os remédios pelo horário mais cedo
+  const sortedMeds = [...medications].sort((a, b) => a.horario.localeCompare(b.horario));
 
   return (
     <div className="flex flex-col h-full px-5 pt-10">
@@ -29,54 +34,67 @@ export default function Home() {
         <p className="text-xl text-gray-700 mt-3 font-medium">Seus remédios de hoje:</p>
       </header>
 
-      <div className="flex flex-col space-y-5">
-        {meds.map((med) => (
-          <div
-            key={med.id}
-            className={`p-6 rounded-3xl border-2 flex items-center justify-between transition-colors ${
-              med.taken
-                ? "bg-green-50 border-green-200 opacity-90"
-                : "bg-white border-blue-100 shadow-sm"
-            }`}
-          >
-            <div className="flex items-center space-x-5">
+      <div className="flex flex-col space-y-5 pb-24">
+        {sortedMeds.length === 0 ? (
+          <div className="p-8 mt-4 text-center bg-gray-100 rounded-3xl border-4 border-dashed border-gray-300">
+            <p className="text-2xl text-gray-600 font-bold leading-relaxed">
+              Você ainda não tem remédios na lista.
+            </p>
+            <p className="text-lg text-gray-500 mt-2">Clique no botão grande <strong className="text-brand-600">( + )</strong> abaixo para começar.</p>
+          </div>
+        ) : (
+          sortedMeds.map((med) => (
+            <Link href={`/medication/${med.id}`} key={med.id} className="block group">
               <div
-                className={`p-4 rounded-2xl ${
-                  med.taken ? "bg-green-100 text-green-600" : "bg-blue-100 text-brand-600"
+                className={`p-6 rounded-3xl border-4 flex items-center justify-between transition-colors ${
+                  med.taken
+                    ? "bg-green-50 border-green-200 opacity-90"
+                    : "bg-white border-blue-100 group-hover:border-blue-300 shadow-sm"
                 }`}
               >
-                <Pill size={40} />
-              </div>
-              <div>
-                <p className={`text-2xl font-bold ${med.taken ? "text-green-800 line-through opacity-70" : "text-gray-900"}`}>
-                  {med.name}
-                </p>
-                <p className="text-xl text-gray-700 font-semibold mt-1">Às {med.time}</p>
-              </div>
-            </div>
+                <div className="flex items-center space-x-5">
+                  <div
+                    className={`p-4 rounded-2xl ${
+                      med.taken ? "bg-green-100 text-green-600" : "bg-blue-100 text-brand-600"
+                    }`}
+                  >
+                    <Pill size={40} />
+                  </div>
+                  <div>
+                    <p className={`text-2xl font-bold ${med.taken ? "text-green-800 line-through opacity-70" : "text-gray-900"}`}>
+                      {med.nome}
+                    </p>
+                    <p className="text-xl text-gray-700 font-semibold mt-1">Às {med.horario}</p>
+                  </div>
+                </div>
 
-            <button
-              onClick={() => toggleStatus(med.id)}
-              aria-label={med.taken ? "Desmarcar como tomado" : "Marcar como tomado"}
-              className={`min-h-[72px] min-w-[72px] rounded-2xl flex items-center justify-center transition-transform active:scale-95 ${
-                med.taken
-                  ? "bg-green-500 text-white shadow-lg"
-                  : "bg-gray-100 text-gray-400 border-2 border-gray-300 hover:bg-gray-200"
-              }`}
-            >
-              <CheckCircle2 size={44} />
-            </button>
-          </div>
-        ))}
+                <button
+                  onClick={(e) => {
+                    e.preventDefault(); // Impede o clique de entrar na tela de detalhes
+                    toggleTaken(med.id);
+                  }}
+                  aria-label={med.taken ? "Desmarcar como tomado" : "Marcar como tomado"}
+                  className={`min-h-[76px] min-w-[76px] rounded-2xl flex items-center justify-center transition-transform active:scale-90 z-10 relative ${
+                    med.taken
+                      ? "bg-green-500 text-white shadow-lg border-2 border-green-600"
+                      : "bg-gray-100 text-gray-400 border-4 border-gray-200 hover:bg-gray-200"
+                  }`}
+                >
+                  <CheckCircle2 size={46} strokeWidth={2.5} />
+                </button>
+              </div>
+            </Link>
+          ))
+        )}
       </div>
 
       <div className="fixed bottom-8 left-0 right-0 flex justify-center pointer-events-none z-50">
         <Link
           href="/add"
-          className="pointer-events-auto h-20 w-20 bg-brand-600 hover:bg-brand-500 text-white rounded-full flex items-center justify-center shadow-xl shadow-blue-600/40 active:scale-95 transition-transform border-4 border-white"
+          className="pointer-events-auto h-[88px] w-[88px] bg-brand-600 hover:bg-brand-500 text-white rounded-full flex items-center justify-center shadow-2xl shadow-blue-600/50 active:scale-95 transition-transform border-4 border-white"
           aria-label="Adicionar Novo Remédio"
         >
-          <Plus size={44} strokeWidth={3} />
+          <Plus size={52} strokeWidth={3.5} />
         </Link>
       </div>
     </div>
