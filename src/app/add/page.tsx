@@ -82,7 +82,7 @@ export default function AddMedication() {
           }
         } catch (err: any) {
            console.error("Falha ao analisar:", err);
-           alert("Tempo esgotado ou falha na rede. Digite o nome do remédio manualmente.");
+           alert("ERRO: " + err.message);
         } finally {
           setLoading(false);
           URL.revokeObjectURL(img.src);
