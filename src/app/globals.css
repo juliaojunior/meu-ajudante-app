@@ -1,0 +1,17 @@
+@import "tailwindcss";
+
+@theme {
+  --color-brand-500: #2563eb;
+  --color-brand-600: #1d4ed8;
+  --color-alert-500: #ef4444;
+  --color-alert-600: #dc2626;
+  
+  --font-sans: "Inter", "Outfit", "Segoe UI", sans-serif;
+}
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+  }
+}
