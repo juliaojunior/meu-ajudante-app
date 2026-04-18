@@ -9,7 +9,6 @@ export default function Home() {
   const { medications, toggleTaken } = useMedicationStore();
   const [mounted, setMounted] = useState(false);
 
-  // Evita o erro de "Hidratação" pois o LocalStorage demora milissegundos para injetar na tela
   useEffect(() => {
     setMounted(true);
   }, []);
@@ -24,6 +23,9 @@ export default function Home() {
 
   // Ordena os remédios pelo horário mais cedo
   const sortedMeds = [...medications].sort((a, b) => a.horario.localeCompare(b.horario));
+  
+  // Resgata o relógio de hoje com fuso zero para checagem do reset de botão
+  const today = new Date().toISOString().split('T')[0];
 
   return (
     <div className="flex flex-col h-full px-5 pt-10">
@@ -31,7 +33,7 @@ export default function Home() {
         <h1 className="text-4xl font-extrabold text-blue-800 leading-tight">
           Bom dia,<br />hora de cuidar<br />da saúde!
         </h1>
-        <p className="text-xl text-gray-700 mt-3 font-medium">Seus remédios de hoje:</p>
+        <p className="text-xl text-gray-700 mt-3 font-medium">Seus remédios para hoje:</p>
       </header>
 
       <div className="flex flex-col space-y-5 pb-24">
@@ -43,54 +45,58 @@ export default function Home() {
             <p className="text-lg text-gray-500 mt-2">Clique no botão grande <strong className="text-brand-600">( + )</strong> abaixo para começar.</p>
           </div>
         ) : (
-          sortedMeds.map((med) => (
-            <Link href={`/medication/${med.id}`} key={med.id} className="block group">
-              <div
-                className={`p-6 rounded-3xl border-4 flex items-center justify-between transition-colors ${
-                  med.taken
-                    ? "bg-green-50 border-green-200 opacity-90"
-                    : "bg-white border-blue-100 group-hover:border-blue-300 shadow-sm"
-                }`}
-              >
-                <div className="flex items-center space-x-5">
-                  {med.fotoBase64 ? (
-                    <div className="w-16 h-16 rounded-2xl overflow-hidden shrink-0 border-2 border-gray-200 shadow-inner">
-                      <img src={med.fotoBase64} alt={`Caixa de ${med.nome}`} className="w-full h-full object-cover" />
-                    </div>
-                  ) : (
-                    <div
-                      className={`p-4 rounded-2xl ${
-                        med.taken ? "bg-green-100 text-green-600" : "bg-blue-100 text-brand-600"
-                      }`}
-                    >
-                      <Pill size={40} />
-                    </div>
-                  )}
-                  <div>
-                    <p className={`text-2xl font-bold ${med.taken ? "text-green-800 line-through opacity-70" : "text-gray-900"}`}>
-                      {med.nome}
-                    </p>
-                    <p className="text-xl text-gray-700 font-semibold mt-1">Às {med.horario}</p>
-                  </div>
-                </div>
+          sortedMeds.map((med) => {
+            const isTaken = med.lastTakenDate === today; // <--- A MÁGICA DO MOTOR AQUI!
 
-                <button
-                  onClick={(e) => {
-                    e.preventDefault(); // Impede o clique de entrar na tela de detalhes
-                    toggleTaken(med.id);
-                  }}
-                  aria-label={med.taken ? "Desmarcar como tomado" : "Marcar como tomado"}
-                  className={`min-h-[76px] min-w-[76px] rounded-2xl flex items-center justify-center transition-transform active:scale-90 z-10 relative ${
-                    med.taken
-                      ? "bg-green-500 text-white shadow-lg border-2 border-green-600"
-                      : "bg-gray-100 text-gray-400 border-4 border-gray-200 hover:bg-gray-200"
+            return (
+              <Link href={`/medication/${med.id}`} key={med.id} className="block group">
+                <div
+                  className={`p-6 rounded-3xl border-4 flex items-center justify-between transition-colors ${
+                    isTaken
+                      ? "bg-green-50 border-green-200 opacity-90"
+                      : "bg-white border-blue-100 group-hover:border-blue-300 shadow-sm"
                   }`}
                 >
-                  <CheckCircle2 size={46} strokeWidth={2.5} />
-                </button>
-              </div>
-            </Link>
-          ))
+                  <div className="flex items-center space-x-5">
+                    {med.fotoBase64 ? (
+                      <div className="w-16 h-16 rounded-2xl overflow-hidden shrink-0 border-2 border-gray-200 shadow-inner">
+                        <img src={med.fotoBase64} alt={`Caixa de ${med.nome}`} className="w-full h-full object-cover" />
+                      </div>
+                    ) : (
+                      <div
+                        className={`p-4 rounded-2xl ${
+                          isTaken ? "bg-green-100 text-green-600" : "bg-blue-100 text-brand-600"
+                        }`}
+                      >
+                        <Pill size={40} />
+                      </div>
+                    )}
+                    <div>
+                      <p className={`text-2xl font-bold ${isTaken ? "text-green-800 line-through opacity-70" : "text-gray-900"}`}>
+                        {med.nome}
+                      </p>
+                      <p className="text-xl text-gray-700 font-semibold mt-1">Às {med.horario}</p>
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={(e) => {
+                      e.preventDefault();
+                      toggleTaken(med.id);
+                    }}
+                    aria-label={isTaken ? "Desmarcar como tomado" : "Marcar como tomado"}
+                    className={`min-h-[76px] min-w-[76px] rounded-2xl flex items-center justify-center transition-transform active:scale-90 z-10 relative ${
+                      isTaken
+                        ? "bg-green-500 text-white shadow-lg border-2 border-green-600"
+                        : "bg-gray-100 text-gray-400 border-4 border-gray-200 hover:bg-gray-200"
+                    }`}
+                  >
+                    <CheckCircle2 size={46} strokeWidth={isTaken ? 3 : 2.5} />
+                  </button>
+                </div>
+              </Link>
+            )
+          })
         )}
       </div>
 
