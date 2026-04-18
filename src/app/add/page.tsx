@@ -24,34 +24,78 @@ export default function AddMedication() {
     if (!file) return;
 
     setLoading(true);
+
     try {
-      const reader = new FileReader();
-      reader.onloadend = async () => {
-        const base64 = reader.result as string;
-        const res = await fetch("/api/analyze", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ imageBase64: base64, mimeType: file.type }),
-        });
-        
-        const data = await res.json();
-        
-        if (data.sucesso && data.medicamento) {
-          setFormData((prev) => ({
-            ...prev,
-            nome: data.medicamento.nome_principal || prev.nome,
-            generico: data.medicamento.nome_generico || prev.generico,
-          }));
-          alert("Bula reconhecida! O nome foi preenchido.");
-        } else {
-          alert(data.mensagem_erro || "Erro visual. Escreva manualmente abaixo.");
+      const img = new Image();
+      img.src = URL.createObjectURL(file);
+      
+      img.onload = async () => {
+        try {
+          // Comprimir a imagem para no máximo 1024px para evitar limite da Vercel (4.5MB)
+          const canvas = document.createElement('canvas');
+          const MAX_SIZE = 1024;
+          let width = img.width;
+          let height = img.height;
+          
+          if (width > height && width > MAX_SIZE) {
+            height *= MAX_SIZE / width;
+            width = MAX_SIZE;
+          } else if (height > MAX_SIZE) {
+            width *= MAX_SIZE / height;
+            height = MAX_SIZE;
+          }
+          
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          if (!ctx) throw new Error("Erro de renderização no celular");
+          
+          ctx.drawImage(img, 0, 0, width, height);
+          
+          // Exportar Jpeg com Qualidade 0.7 (comprime drasticamente, mantém legibilidade)
+          const compressedBase64 = canvas.toDataURL('image/jpeg', 0.7);
+          
+          const res = await fetch("/api/analyze", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ 
+              imageBase64: compressedBase64, 
+              mimeType: "image/jpeg" 
+            }),
+          });
+          
+          if (!res.ok) {
+             throw new Error(`Erro no servidor: ${res.status}`);
+          }
+          
+          const data = await res.json();
+          
+          if (data.sucesso && data.medicamento) {
+            setFormData((prev) => ({
+              ...prev,
+              nome: data.medicamento.nome_principal || prev.nome,
+              generico: data.medicamento.nome_generico || prev.generico,
+            }));
+            alert("Bula reconhecida! O nome foi preenchido.");
+          } else {
+            alert(data.mensagem_erro || "Erro visual. Escreva manualmente abaixo.");
+          }
+        } catch (err: any) {
+           console.error("Falha ao analisar:", err);
+           alert("Tempo esgotado ou falha na rede. Digite o nome do remédio manualmente.");
+        } finally {
+          setLoading(false);
+          URL.revokeObjectURL(img.src);
         }
-        setLoading(false);
       };
-      reader.readAsDataURL(file);
+      
+      img.onerror = () => {
+        alert("Erro ao ler câmera do celular.");
+        setLoading(false);
+      }
     } catch {
-      alert("Aconteceu um erro. Tente novamente.");
-      setLoading(false);
+       alert("Erro inesperado. Digite manualmente.");
+       setLoading(false);
     }
   };
 
@@ -61,7 +105,6 @@ export default function AddMedication() {
       return;
     }
     
-    // Dispara a mutação na store!
     addMedication(formData);
     router.push("/");
   };
@@ -80,7 +123,6 @@ export default function AddMedication() {
       </header>
 
       <main className="flex-1 p-5 flex flex-col space-y-8 overflow-y-auto pb-32">
-        {/* Inteligência Artificial Oculta no Botão Grande */}
         <div className="w-full">
           <input 
             type="file" 
@@ -103,7 +145,6 @@ export default function AddMedication() {
           </label>
         </div>
 
-        {/* Inputs de Preenchimento Manual ou Recebido da IA */}
         <div className="space-y-6">
           <div className="flex flex-col space-y-3">
             <label className="text-2xl font-bold text-gray-800">Nome da Caixa</label>
