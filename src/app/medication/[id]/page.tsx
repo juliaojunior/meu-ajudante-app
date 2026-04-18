@@ -99,10 +99,10 @@ export default function MedicationDetails() {
 
         {/* Ações Radicais */}
         <div className="flex flex-col space-y-4 pt-4">
-          <button className="min-h-[80px] w-full flex items-center justify-center space-x-4 text-2xl font-bold text-blue-800 bg-blue-100 hover:bg-blue-200 border-4 border-blue-200 rounded-3xl transition-colors active:scale-95">
+          <Link href={`/medication/${med.id}/edit`} className="min-h-[80px] w-full flex items-center justify-center space-x-4 text-2xl font-bold text-blue-800 bg-blue-100 hover:bg-blue-200 border-4 border-blue-200 rounded-3xl transition-colors active:scale-95">
             <Edit3 size={32} />
             <span>Alterar Cadastro</span>
-          </button>
+          </Link>
           
           <button 
             onClick={() => setIsModalOpen(true)}
