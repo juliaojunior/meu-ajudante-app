@@ -53,13 +53,19 @@ export default function Home() {
                 }`}
               >
                 <div className="flex items-center space-x-5">
-                  <div
-                    className={`p-4 rounded-2xl ${
-                      med.taken ? "bg-green-100 text-green-600" : "bg-blue-100 text-brand-600"
-                    }`}
-                  >
-                    <Pill size={40} />
-                  </div>
+                  {med.fotoBase64 ? (
+                    <div className="w-16 h-16 rounded-2xl overflow-hidden shrink-0 border-2 border-gray-200 shadow-inner">
+                      <img src={med.fotoBase64} alt={`Caixa de ${med.nome}`} className="w-full h-full object-cover" />
+                    </div>
+                  ) : (
+                    <div
+                      className={`p-4 rounded-2xl ${
+                        med.taken ? "bg-green-100 text-green-600" : "bg-blue-100 text-brand-600"
+                      }`}
+                    >
+                      <Pill size={40} />
+                    </div>
+                  )}
                   <div>
                     <p className={`text-2xl font-bold ${med.taken ? "text-green-800 line-through opacity-70" : "text-gray-900"}`}>
                       {med.nome}

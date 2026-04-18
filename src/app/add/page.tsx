@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Camera, Volume2, ArrowLeft, Loader2 } from "lucide-react";
+import { Camera, Volume2, ArrowLeft, Loader2, Image as ImageIcon } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMedicationStore } from "@/store/useMedicationStore";
@@ -17,6 +17,7 @@ export default function AddMedication() {
     horario: "08:00",
     periodicidade: "Diário",
     alarmeVisivel: true,
+    fotoBase64: "", // Guarda a miniatura da caixa
   });
 
   const handleCaptureImage = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -26,14 +27,14 @@ export default function AddMedication() {
     setLoading(true);
 
     try {
-      const img = new Image();
+      const img = new window.Image();
       img.src = URL.createObjectURL(file);
       
-      img.onload = async () => {
+      img.onload = () => {
         try {
-          // Comprimir a imagem para no máximo 1024px para evitar limite da Vercel (4.5MB)
+          // Comprimir forte para ser só miniatura e caber no Banco de Dados Local
           const canvas = document.createElement('canvas');
-          const MAX_SIZE = 1024;
+          const MAX_SIZE = 512; // Fica bem levinho (tipo 30kb)
           let width = img.width;
           let height = img.height;
           
@@ -52,37 +53,44 @@ export default function AddMedication() {
           
           ctx.drawImage(img, 0, 0, width, height);
           
-          // Exportar Jpeg com Qualidade 0.7 (comprime drasticamente, mantém legibilidade)
-          const compressedBase64 = canvas.toDataURL('image/jpeg', 0.7);
+          // Exportar Jpeg com Qualidade Media/Baixa apenas para Thumbnail
+          const compressedBase64 = canvas.toDataURL('image/jpeg', 0.6);
           
+          // APENAS SETAR NO FORMULÁRIO COMO FOTO
+          setFormData(prev => ({ ...prev, fotoBase64: compressedBase64 }));
+
+          /* 
+          ===============================================================
+          ARQUITETURA DE INTELIGÊNCIA ARTIFICIAL (PRONTA PARA V2.0)
+          ===============================================================
           const res = await fetch("/api/analyze", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ 
-              imageBase64: compressedBase64, 
-              mimeType: "image/jpeg" 
-            }),
+            body: JSON.stringify({ imageBase64: compressedBase64, mimeType: "image/jpeg" }),
           });
           
+          const errData = await res.json().catch(() => ({}));
+          
           if (!res.ok) {
-             throw new Error(`Erro no servidor: ${res.status}`);
+             throw new Error(errData.mensagem_erro || `Erro HTTP ${res.status}`);
           }
           
-          const data = await res.json();
-          
-          if (data.sucesso && data.medicamento) {
+          if (errData.sucesso && errData.medicamento) {
             setFormData((prev) => ({
               ...prev,
-              nome: data.medicamento.nome_principal || prev.nome,
-              generico: data.medicamento.nome_generico || prev.generico,
+              nome: errData.medicamento.nome_principal || prev.nome,
+              generico: errData.medicamento.nome_generico || prev.generico,
             }));
-            alert("Bula reconhecida! O nome foi preenchido.");
-          } else {
-            alert(data.mensagem_erro || "Erro visual. Escreva manualmente abaixo.");
+            alert("IA: Bula reconhecida e formulário preenchido!");
           }
+          ===============================================================
+          */
+          
+          alert("Foto salva com sucesso! Pode continuar preenchendo o nome.");
+
         } catch (err: any) {
-           console.error("Falha ao analisar:", err);
-           alert("ERRO: " + err.message);
+           console.error("Falha:", err);
+           alert("Falha local. Digite o nome do remédio manualmente.");
         } finally {
           setLoading(false);
           URL.revokeObjectURL(img.src);
@@ -123,26 +131,35 @@ export default function AddMedication() {
       </header>
 
       <main className="flex-1 p-5 flex flex-col space-y-8 overflow-y-auto pb-32">
-        <div className="w-full">
-          <input 
-            type="file" 
-            accept="image/*" 
-            capture="environment" 
-            id="cameraInput" 
-            className="hidden" 
-            onChange={handleCaptureImage}
-          />
-          <label 
-            htmlFor="cameraInput"
-            className={`min-h-[88px] w-full flex items-center justify-center space-x-4 rounded-2xl shadow-md transition-transform active:scale-95 text-2xl font-bold cursor-pointer border-4 ${
-              loading 
-                ? "bg-gray-200 text-gray-600 border-gray-300 pointer-events-none" 
-                : "bg-brand-600 text-white border-brand-700 hover:bg-brand-500"
-            }`}
-          >
-            {loading ? <Loader2 size={36} className="animate-spin" /> : <Camera size={36} />}
-            <span>{loading ? "Lendo embalagem..." : "Tirar Foto da Caixa"}</span>
-          </label>
+        <div className="w-full flex space-x-4">
+          {/* Mostra a miniatura se existir */}
+          {formData.fotoBase64 && (
+            <div className="w-24 h-24 rounded-2xl bg-gray-200 border-4 border-gray-300 overflow-hidden shrink-0 shadow-md">
+              <img src={formData.fotoBase64} alt="Miniatura do remédio" className="w-full h-full object-cover" />
+            </div>
+          )}
+
+          <div className="flex-1">
+            <input 
+              type="file" 
+              accept="image/*" 
+              capture="environment" 
+              id="cameraInput" 
+              className="hidden" 
+              onChange={handleCaptureImage}
+            />
+            <label 
+              htmlFor="cameraInput"
+              className={`h-full min-h-[96px] w-full flex items-center justify-center space-x-3 rounded-2xl shadow-md transition-transform active:scale-95 text-xl font-bold cursor-pointer border-4 px-4 ${
+                loading 
+                  ? "bg-gray-200 text-gray-600 border-gray-300 pointer-events-none" 
+                  : formData.fotoBase64 ? "bg-white text-gray-800 border-gray-300 hover:bg-gray-100" : "bg-brand-600 text-white border-brand-700 hover:bg-brand-500"
+              }`}
+            >
+              {loading ? <Loader2 size={32} className="animate-spin" /> : formData.fotoBase64 ? <ImageIcon size={32} /> : <Camera size={32} />}
+              <span className="text-center">{loading ? "Processando..." : formData.fotoBase64 ? "Trocar Foto da Caixa" : "Tirar Foto da Caixa"}</span>
+            </label>
+          </div>
         </div>
 
         <div className="space-y-6">

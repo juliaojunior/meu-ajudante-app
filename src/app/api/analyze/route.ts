@@ -59,10 +59,10 @@ export async function POST(req: NextRequest) {
     const result = JSON.parse(resultText);
 
     return NextResponse.json(result);
-  } catch (error) {
+  } catch (error: any) {
     console.error("Erro na conversão Gemini:", error);
     return NextResponse.json(
-      { sucesso: false, mensagem_erro: "Erro interno ao processar a foto. Tente novamente." },
+      { sucesso: false, mensagem_erro: "Erro Interno do Servidor: " + (error.message || "Falha desconhecida") },
       { status: 500 }
     );
   }

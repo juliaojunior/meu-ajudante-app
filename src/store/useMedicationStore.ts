@@ -8,7 +8,8 @@ export interface Medication {
   horario: string;
   periodicidade: string;
   alarmeVisivel: boolean;
-  taken: boolean; // Simula a marcação diária no card da Home
+  taken: boolean;
+  fotoBase64?: string;
 }
 
 interface MedicationState {

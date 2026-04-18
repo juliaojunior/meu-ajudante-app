@@ -58,9 +58,15 @@ export default function MedicationDetails() {
       <main className="flex-1 p-5 space-y-6">
         {/* Representação Visual Gigante */}
         <div className="w-full bg-blue-100/50 aspect-video rounded-[32px] flex flex-col items-center justify-center border-4 border-blue-200 shadow-sm relative overflow-hidden">
-           <Pill size={100} className="text-blue-500 opacity-20 absolute" />
-           <Pill size={80} className="text-brand-600 relative z-10" />
-           <p className="mt-4 font-bold text-blue-800 text-xl relative z-10">Ficha Médica</p>
+           {med.fotoBase64 ? (
+              <img src={med.fotoBase64} alt={`Caixa de ${med.nome}`} className="w-full h-full object-cover" />
+           ) : (
+              <>
+                 <Pill size={100} className="text-blue-500 opacity-20 absolute" />
+                 <Pill size={80} className="text-brand-600 relative z-10" />
+                 <p className="mt-4 font-bold text-blue-800 text-xl relative z-10">Ficha Médica</p>
+              </>
+           )}
         </div>
 
         {/* Informações Básicas com leitura clara */}
