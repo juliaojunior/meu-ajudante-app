@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import { headers } from "next/headers";
 import "./globals.css";
 
 export const viewport: Viewport = {
@@ -15,11 +16,16 @@ export const metadata: Metadata = {
   manifest: "/manifest.json",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  // A leitura do header força Renderização Dinâmica (SSR) garantindo que o 
+  // nonce da CSP gerado no middleware sempre sincronize com o HTML gerado.
+  const headersList = await headers();
+  const nonce = headersList.get("x-nonce") || "";
+
   return (
     <html lang="pt-BR">
       <body className="antialiased min-h-screen bg-gray-50 text-gray-900">

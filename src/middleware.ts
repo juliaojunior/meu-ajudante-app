@@ -53,10 +53,12 @@ export function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    /*
-     * Aplica o proxy interceptor em todas as páginas (inclusive API Routes),
-     * exceto estáticos e arquivos internos cruciais do framework Next.js.
-     */
-    "/((?!_next/static|_next/image|favicon.ico|manifest.json).*)",
+    {
+      source: "/((?!_next/static|_next/image|favicon.ico|manifest.json).*)",
+      missing: [
+        { type: "header", key: "next-router-prefetch" },
+        { type: "header", key: "purpose", value: "prefetch" },
+      ],
+    },
   ],
 };
