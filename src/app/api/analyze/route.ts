@@ -1,13 +1,36 @@
 import { NextRequest, NextResponse } from "next/server";
 import { GoogleGenAI, Type } from "@google/genai";
+import { z } from "zod";
+import { verifyAuthAndRateLimit } from "@/lib/security";
+
+const analyzeRequestSchema = z.object({
+  imageBase64: z.string().min(1, "A imagem em Base64 é obrigatória"),
+  mimeType: z.string().optional(),
+});
 
 export async function POST(req: NextRequest) {
   try {
-    const { imageBase64, mimeType } = await req.json();
-
-    if (!imageBase64) {
-      return NextResponse.json({ sucesso: false, mensagem_erro: "Nenhuma imagem enviada." }, { status: 400 });
+    // 1. Verificação de Segurança e Limitador (Prevenção de Abuso)
+    const securityCheck = await verifyAuthAndRateLimit(req);
+    if (!securityCheck.authorized) {
+      const isRateLimit = securityCheck.reason === "rate-limit";
+      return NextResponse.json(
+        { sucesso: false, mensagem_erro: isRateLimit ? "Muitas requisições. Tente novamente mais tarde." : "Não autorizado." },
+        { status: isRateLimit ? 429 : 401 }
+      );
     }
+
+    const body = await req.json();
+    const parsedBody = analyzeRequestSchema.safeParse(body);
+
+    if (!parsedBody.success) {
+      return NextResponse.json(
+        { sucesso: false, mensagem_erro: "Dados de requisição inválidos.", detalhes: parsedBody.error.format() },
+        { status: 400 }
+      );
+    }
+
+    const { imageBase64, mimeType } = parsedBody.data;
 
     const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
