@@ -15,8 +15,9 @@ export async function verifyAuthAndRateLimit(req: NextRequest) {
      // return { authorized: false, reason: "unauthorized" }; // <-- Descomente para forçar auth
   }
 
-  // 2. Rate Limiter (Limitação de Requisições por IP ou Cliente)
-  const identifier = req.headers.get("x-forwarded-for") || req.ip || "anonymous";
+  // 2. Rate Limiter (Limitação de 5 Requisições por Minuto por IP)
+  const forwardedFor = req.headers.get("x-forwarded-for");
+  const identifier = forwardedFor ? forwardedFor.split(',')[0].trim() : "anonymous";
   const now = Date.now();
   const windowMs = 60 * 1000; // Janela de 1 minuto
   const maxRequests = 5; // Limite de 5 tentativas por minuto
