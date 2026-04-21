@@ -5,17 +5,19 @@ export function middleware(request: NextRequest) {
   // Geração de Nonce Criptográfico para CSP Dinâmica
   const nonce = Buffer.from(crypto.randomUUID()).toString("base64");
 
+  const isDev = process.env.NODE_ENV !== "production";
+
   const cspHeader = `
     default-src 'self';
-    script-src 'self' 'nonce-${nonce}' 'strict-dynamic';
+    script-src 'self' ${isDev ? "'unsafe-inline' 'unsafe-eval'" : `'nonce-${nonce}' 'strict-dynamic'`};
     style-src 'self' 'unsafe-inline';
     img-src 'self' blob: data: https:;
-    font-src 'self';
+    font-src 'self' data:;
     object-src 'none';
     base-uri 'self';
     form-action 'self';
     frame-ancestors 'none';
-    upgrade-insecure-requests;
+    ${!isDev ? "upgrade-insecure-requests;" : ""}
   `.replace(/\s{2,}/g, " ").trim();
 
   const requestHeaders = new Headers(request.headers);
